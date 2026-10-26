@@ -1,61 +1,61 @@
 # Mini-projeto — Festa em Cena (Módulo 1)
 
-Análise exploratória do arquivo `halloween_vendas.csv` com **Python nativo** (`csv`, `re`, `datetime`), conforme o enunciado em [`INSTRUCTIONS.md`](INSTRUCTIONS.md).
+A **Festa em Cena** é uma rede fictícia de fantasias e acessórios de Halloween. Este projeto lê `halloween_vendas.csv`, trata inconsistências e gera um relatório exploratório com **Python nativo** (`csv`, `re`, `datetime`), conforme [`INSTRUCTIONS.md`](INSTRUCTIONS.md).
+
+Cada **linha** do CSV é um pedido de um único produto (a coluna `quantidade` indica unidades, não pedidos distintos).
+
+| Coluna | Significado |
+|--------|-------------|
+| `pedido_id` | Identificador do pedido |
+| `data_venda` | Data e hora do registro (horário local, sem fuso) |
+| `canal_venda` | Mercado, Loja física ou Web |
+| `status_pedido` | Situação do pedido (ex.: Concluído, Cancelado) |
 
 ## Pré-requisitos
 
 - [uv](https://docs.astral.sh/uv/) instalado
-- Python 3.11+ (o projeto fixa a versão em `.python-version`)
+- Python 3.11+ (`.python-version`)
 
-## Instalação
-
-Na pasta `ML-CV-T5/ex1`:
+## Instalação e execução
 
 ```bash
 cd ML-CV-T5/ex1
 uv sync
-```
-
-Isso cria o ambiente virtual em `.venv` e instala o Jupyter (grupo de desenvolvimento) para executar o notebook.
-
-Coloque o arquivo `halloween_vendas.csv` na mesma pasta do projeto (já incluído neste repositório).
-
-## Como executar
-
-### Notebook
-
-```bash
 uv run jupyter notebook analise.ipynb
 ```
 
-Ou, com JupyterLab:
+O arquivo `halloween_vendas.csv` deve ficar nesta pasta.
 
-```bash
-uv run jupyter lab analise.ipynb
-```
+## Regras adotadas
 
-Execute as células em ordem. O notebook valida o arquivo, lê os registros com `csv.DictReader` e aplica as transformações documentadas no código.
+### Textos
 
-### Módulo Python
+- `categoria`: `.strip()`, `.lower()`, `re.sub()` para remover pontuação; vazio → `sem categoria`.
+- `canal_venda`: padronização para Mercado, Loja física e Web quando a grafia é reconhecida.
 
-As funções reutilizáveis ficam em `functions.py`. Exemplo no terminal:
+### Valores numéricos
 
-```bash
-uv run python -c "from functions import validate_csv_file; print(validate_csv_file().summary())"
-```
+- `quantidade`: inteiro **maior que zero**; problemas são marcados, sem correção.
+- `preco_unitario`: preenchido e **≥ 0**; ausências não são inventadas.
+
+### Datas
+
+- `data_venda`: parse com `datetime.strptime(..., "%Y-%m-%d %H:%M:%S")`; exibição brasileira `dd/mm/aaaa`; inválidas são contadas e excluídas das séries por ano-mês.
+- `data_entrega`: vazia não é preenchida; investigamos a relação com `status_pedido` sem alterar o CSV.
+
+## Resultados (base fictícia)
+
+Execute o notebook para reproduzir os números. Resumo típico:
+
+- **Entrega sem data:** a hipótese “só cancelados” é **falsa** — há pedidos **Concluído** sem `data_entrega` (contraexemplos no notebook).
+- **Descoberta por canal:** o canal **Web** concentra o maior volume de pedidos registrados na base tratada (todos os status), à frente de Loja física e Mercado. *Limitação:* contagem de linhas do CSV, não receita nem vendas efetivadas.
+- **Descoberta por período:** os meses de **outubro** (2024 e 2025) lideram os registros com `data_venda` válida, coerente com a sazonalidade de Halloween. *Limitação:* quatro datas inválidas ficam fora do agrupamento ano-mês.
 
 ## Estrutura
 
 | Arquivo | Função |
 |---------|--------|
-| `functions.py` | Leitura do CSV, validação e transformações |
-| `analise.ipynb` | Exploração e relatórios |
-| `halloween_vendas.csv` | Base de dados (1.500 pedidos) |
-| `INSTRUCTIONS.md` | Enunciado completo do mini-projeto |
-
-### Regras de validação numérica
-
-- **quantidade:** texto não vazio, conversível para `int` e **maior que zero**. Valores ausentes, não inteiros ou ≤ 0 são marcados; o valor original é mantido.
-- **preco_unitario:** texto não vazio, conversível para `float` e **≥ 0**. Ausente, não numérico ou negativo são marcados; não preenchemos preço faltante.
-
-Contagens reportam problemas **por campo** e **pedidos distintos** com qualquer problema (`pedido_id`), sem somar campos do mesmo pedido como pedidos separados.
+| `functions.py` | Leitura, validação, transformações e relatório |
+| `analise.ipynb` | Fluxo completo e interpretação |
+| `halloween_vendas.csv` | 1.500 pedidos fictícios |
+| `INSTRUCTIONS.md` | Enunciado |

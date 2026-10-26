@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,8 @@ EXPECTED_COLUMNS: tuple[str, ...] = (
 
 DEFAULT_CSV_NAME = "halloween_vendas.csv"
 SEM_CATEGORIA = "sem categoria"
+DATA_VENDA_FORMAT = "%Y-%m-%d %H:%M:%S"
+STATUS_CANCELADO = "Cancelado"
 
 CANAIS_OFICIAIS: dict[str, str] = {
     "mercado": "Mercado",
@@ -35,6 +38,7 @@ CANAIS_OFICIAIS: dict[str, str] = {
     "loja fisica": "Loja física",
     "web": "Web",
 }
+CANAIS_RECONHECIDOS: frozenset[str] = frozenset(CANAIS_OFICIAIS.values())
 
 _CATEGORIA_CARACTERES_INVALIDOS = re.compile(r"[^a-z ]")
 _ESPACOS_MULTIPLOS = re.compile(r"\s+")
@@ -342,3 +346,184 @@ def validate_numeric_fields(
         pedidos_com_problema=len(pedidos_afetados),
     )
     return validos, com_problema, stats
+
+
+@dataclass(frozen=True)
+class DataVendaInfo:
+    """Resultado do parse de data_venda; preserva o texto original."""
+
+    original: str
+    valido: bool
+    data_br: str | None
+    ano: int | None
+    mes: int | None
+    dia: int | None
+    hora: str | None
+
+
+@dataclass(frozen=True)
+class EntregaSemDataStats:
+    sem_entrega_cancelados: int
+    sem_entrega_outros_status: int
+    hipotese_todos_cancelados: bool
+    exemplos_outros_status: tuple[dict[str, str], ...]
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "sem_entrega_cancelados": self.sem_entrega_cancelados,
+            "sem_entrega_outros_status": self.sem_entrega_outros_status,
+            "hipotese_todos_cancelados": self.hipotese_todos_cancelados,
+            "exemplos_outros_status": len(self.exemplos_outros_status),
+        }
+
+
+@dataclass(frozen=True)
+class ContagemCanal:
+    por_canal: dict[str, int]
+    excluidos: int
+
+    def summary(self) -> dict[str, Any]:
+        return {"por_canal": self.por_canal, "excluidos": self.excluidos}
+
+
+@dataclass(frozen=True)
+class ContagemAnoMes:
+    por_ano_mes: dict[str, int]
+    excluidos: int
+
+    def summary(self) -> dict[str, Any]:
+        return {"por_ano_mes": self.por_ano_mes, "excluidos": self.excluidos}
+
+
+@dataclass(frozen=True)
+class RelatorioStatus:
+    total_linhas: int
+    categorias_padronizadas: int
+    problemas_numericos: NumericValidationStats
+    datas_invalidas: int
+    total_cancelados: int
+    entrega: EntregaSemDataStats
+    canais: ContagemCanal
+    periodos: ContagemAnoMes
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "total_linhas": self.total_linhas,
+            "categorias_padronizadas": self.categorias_padronizadas,
+            "problemas_numericos": self.problemas_numericos.summary(),
+            "datas_invalidas": self.datas_invalidas,
+            "total_cancelados": self.total_cancelados,
+            "entrega": self.entrega.summary(),
+            "canais": self.canais.summary(),
+            "periodos": self.periodos.summary(),
+        }
+
+
+def parse_data_venda(raw: str) -> DataVendaInfo:
+    """Converte data_venda com strptime e gera apresentação brasileira (dd/mm/aaaa)."""
+    original = raw
+    texto = raw.strip()
+    if not texto:
+        return DataVendaInfo(original, False, None, None, None, None, None)
+    try:
+        momento = datetime.strptime(texto, DATA_VENDA_FORMAT)
+    except ValueError:
+        return DataVendaInfo(original, False, None, None, None, None, None)
+    return DataVendaInfo(
+        original=original,
+        valido=True,
+        data_br=momento.strftime("%d/%m/%Y"),
+        ano=momento.year,
+        mes=momento.month,
+        dia=momento.day,
+        hora=momento.strftime("%H:%M:%S"),
+    )
+
+
+def _data_entrega_vazia(raw: str) -> bool:
+    return not raw.strip()
+
+
+def analyze_entrega_sem_data(
+    registros: list[dict[str, str]],
+    max_exemplos: int = 3,
+) -> EntregaSemDataStats:
+    """
+    Verifica se pedidos sem data_entrega são sempre Cancelado.
+    Não altera status nem inventa datas.
+    """
+    sem_entrega_cancelados = 0
+    sem_entrega_outros_status = 0
+    exemplos: list[dict[str, str]] = []
+
+    for registro in registros:
+        if not _data_entrega_vazia(registro["data_entrega"]):
+            continue
+        if registro["status_pedido"] == STATUS_CANCELADO:
+            sem_entrega_cancelados += 1
+        else:
+            sem_entrega_outros_status += 1
+            if len(exemplos) < max_exemplos:
+                exemplos.append(dict(registro))
+
+    hipotese = sem_entrega_outros_status == 0
+    return EntregaSemDataStats(
+        sem_entrega_cancelados=sem_entrega_cancelados,
+        sem_entrega_outros_status=sem_entrega_outros_status,
+        hipotese_todos_cancelados=hipotese,
+        exemplos_outros_status=tuple(exemplos),
+    )
+
+
+def contar_pedidos_por_canal(registros: list[dict[str, str]]) -> ContagemCanal:
+    """Conta pedidos por canal reconhecido; inclui todos os status."""
+    contagem: dict[str, int] = {canal: 0 for canal in sorted(CANAIS_RECONHECIDOS)}
+    excluidos = 0
+    for registro in registros:
+        canal = registro["canal_venda"]
+        if canal in CANAIS_RECONHECIDOS:
+            contagem[canal] += 1
+        else:
+            excluidos += 1
+    return ContagemCanal(por_canal=contagem, excluidos=excluidos)
+
+
+def contar_pedidos_por_ano_mes(registros: list[dict[str, str]]) -> ContagemAnoMes:
+    """Agrupa por ano-mês usando apenas data_venda válida."""
+    contagem: dict[str, int] = {}
+    excluidos = 0
+    for registro in registros:
+        info = parse_data_venda(registro["data_venda"])
+        if not info.valido or info.ano is None or info.mes is None:
+            excluidos += 1
+            continue
+        chave = f"{info.ano}-{info.mes:02d}"
+        contagem[chave] = contagem.get(chave, 0) + 1
+    return ContagemAnoMes(
+        por_ano_mes=dict(sorted(contagem.items())),
+        excluidos=excluidos,
+    )
+
+
+def contar_datas_invalidas(registros: list[dict[str, str]]) -> int:
+    return sum(1 for registro in registros if not parse_data_venda(registro["data_venda"]).valido)
+
+
+def gerar_relatorio_status(
+    registros_limpos: list[dict[str, str]],
+    stats_strings: StringTransformStats,
+    stats_numericos: NumericValidationStats,
+) -> RelatorioStatus:
+    """Relatório consolidado da exploração (Sprint 4)."""
+    return RelatorioStatus(
+        total_linhas=len(registros_limpos),
+        categorias_padronizadas=len(registros_limpos),
+        problemas_numericos=stats_numericos,
+        datas_invalidas=contar_datas_invalidas(registros_limpos),
+        total_cancelados=sum(
+            1 for registro in registros_limpos if registro["status_pedido"] == STATUS_CANCELADO
+        ),
+        entrega=analyze_entrega_sem_data(registros_limpos),
+        canais=contar_pedidos_por_canal(registros_limpos),
+        periodos=contar_pedidos_por_ano_mes(registros_limpos),
+    )
