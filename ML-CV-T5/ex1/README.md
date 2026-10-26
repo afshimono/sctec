@@ -53,6 +53,12 @@ uv run python -c "from functions import validate_csv_file; print(validate_csv_fi
 | `halloween_vendas.csv` | Base de dados (1.500 pedidos) |
 | `INSTRUCTIONS.md` | Enunciado completo do mini-projeto |
 
+## Sprint 0 — linha de base
+
+- Estrutura do repositório e dependências (`uv`, Jupyter) para o mini-projeto
+- Dataset `halloween_vendas.csv` versionado em `ML-CV-T5/ex1`
+- Branch `sprint-0` usada para alinhar `main` com o conteúdo integrado da Sprint 1
+
 ## Sprint 1 — entrega parcial
 
 - Leitura do CSV com `csv.DictReader` e `encoding="utf-8"`
@@ -65,4 +71,4 @@ uv run python -c "from functions import validate_csv_file; print(validate_csv_fi
 - Contagem separada de categorias vazias preenchidas e categorias não vazias alteradas
 - Exemplos antes/depois no notebook `analise.ipynb`
 
-Branch `sprint-2-transformacao` (worktree Herdr em `worktrees/sprint-2-transformacao`).
+Branches: `sprint-1-ingestao` e `sprint-2-transformacao` concentram as entregas incrementais; `main` recebe os merges aprovados.
