@@ -22,7 +22,7 @@ Coloque o arquivo `halloween_vendas.csv` na mesma pasta do projeto (já incluíd
 
 ## Como executar
 
-### Notebook (Sprint 1 — ingestão)
+### Notebook
 
 ```bash
 uv run jupyter notebook analise.ipynb
@@ -34,7 +34,7 @@ Ou, com JupyterLab:
 uv run jupyter lab analise.ipynb
 ```
 
-Execute as células em ordem. A primeira etapa valida o arquivo e lê os registros com `csv.DictReader`.
+Execute as células em ordem. O notebook valida o arquivo, lê os registros com `csv.DictReader` e aplica as transformações documentadas no código.
 
 ### Módulo Python
 
@@ -48,21 +48,7 @@ uv run python -c "from functions import validate_csv_file; print(validate_csv_fi
 
 | Arquivo | Função |
 |---------|--------|
-| `functions.py` | Leitura do CSV e validação estrutural |
-| `analise.ipynb` | Exploração e relatórios por sprint |
+| `functions.py` | Leitura do CSV, validação e transformações |
+| `analise.ipynb` | Exploração e relatórios |
 | `halloween_vendas.csv` | Base de dados (1.500 pedidos) |
 | `INSTRUCTIONS.md` | Enunciado completo do mini-projeto |
-
-## Sprint 0 — linha de base
-
-- Estrutura do repositório e dependências (`uv`, Jupyter) para o mini-projeto
-- Dataset `halloween_vendas.csv` versionado em `ML-CV-T5/ex1`
-- Branch `sprint-0` usada para alinhar `main` com o conteúdo integrado da Sprint 1
-
-## Sprint 1 — entrega parcial
-
-- Leitura do CSV com `csv.DictReader` e `encoding="utf-8"`
-- Validação de existência do arquivo, cabeçalho e colunas
-- Contagem de linhas e exibição de três registros de exemplo
-
-Branches: `sprint-1-ingestao` e `sprint-2-transformacao` concentram as entregas incrementais; `main` recebe os merges aprovados.
