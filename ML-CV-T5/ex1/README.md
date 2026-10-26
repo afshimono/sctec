@@ -47,7 +47,7 @@ Para mais detalhes na saída:
 uv run pytest -v
 ```
 
-Os testes ficam em `tests/test_functions.py` e cobrem as funções públicas (e auxiliares internas) de `functions.py`. Alguns casos de integração usam `halloween_vendas.csv` quando o arquivo está presente.
+Os testes em `tests/test_functions.py` usam **pytest** (funções `test_*`, `parametrize` e fixtures em `tests/conftest.py`). Cobrem as funções públicas e auxiliares de `functions.py`; a integração com `halloween_vendas.csv` usa a fixture `csv_halloween`.
 
 ## Regras adotadas
 
