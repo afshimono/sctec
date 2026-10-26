@@ -26,6 +26,29 @@ uv run jupyter notebook analise.ipynb
 
 O arquivo `halloween_vendas.csv` deve ficar nesta pasta.
 
+## Testes
+
+Instale as dependências de desenvolvimento (inclui **pytest**):
+
+```bash
+cd ML-CV-T5/ex1
+uv sync
+```
+
+Execute a suíte de testes:
+
+```bash
+uv run pytest
+```
+
+Para mais detalhes na saída:
+
+```bash
+uv run pytest -v
+```
+
+Os testes em `tests/test_functions.py` usam **pytest** (funções `test_*`, `parametrize` e fixtures em `tests/conftest.py`). Cobrem as funções públicas e auxiliares de `functions.py`; a integração com `halloween_vendas.csv` usa a fixture `csv_halloween`.
+
 ## Regras adotadas
 
 ### Textos
