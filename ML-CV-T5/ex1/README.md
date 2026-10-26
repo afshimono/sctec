@@ -59,4 +59,10 @@ uv run python -c "from functions import validate_csv_file; print(validate_csv_fi
 - Validação de existência do arquivo, cabeçalho e colunas
 - Contagem de linhas e exibição de três registros de exemplo
 
-Branches de desenvolvimento: trabalho da Sprint 1 na branch `sprint-1-ingestao` (worktree Herdr em `worktrees/sprint-1-ingestao` na raiz do repositório `sctec`).
+## Sprint 2 — entrega parcial
+
+- Funções `normalize_categoria`, `normalize_canal_venda` e `transform_string_fields`
+- Contagem separada de categorias vazias preenchidas e categorias não vazias alteradas
+- Exemplos antes/depois no notebook `analise.ipynb`
+
+Branch `sprint-2-transformacao` (worktree Herdr em `worktrees/sprint-2-transformacao`).

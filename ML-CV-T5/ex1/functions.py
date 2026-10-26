@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,17 @@ EXPECTED_COLUMNS: tuple[str, ...] = (
 )
 
 DEFAULT_CSV_NAME = "halloween_vendas.csv"
+SEM_CATEGORIA = "sem categoria"
+
+CANAIS_OFICIAIS: dict[str, str] = {
+    "mercado": "Mercado",
+    "loja física": "Loja física",
+    "loja fisica": "Loja física",
+    "web": "Web",
+}
+
+_CATEGORIA_CARACTERES_INVALIDOS = re.compile(r"[^a-z ]")
+_ESPACOS_MULTIPLOS = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
@@ -165,3 +177,79 @@ def read_sales_csv(csv_path: Path | str | None = None) -> list[dict[str, str]]:
 
     with path.open(encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
+
+
+@dataclass(frozen=True)
+class StringTransformStats:
+    """Contagens da padronização de `categoria` e `canal_venda`."""
+
+    categorias_vazias_preenchidas: int
+    categorias_nao_vazias_alteradas: int
+    canais_alterados: int
+
+    def summary(self) -> dict[str, int]:
+        return {
+            "categorias_vazias_preenchidas": self.categorias_vazias_preenchidas,
+            "categorias_nao_vazias_alteradas": self.categorias_nao_vazias_alteradas,
+            "canais_alterados": self.canais_alterados,
+        }
+
+
+def normalize_categoria(raw: str) -> str:
+    """
+    Aplica .strip(), .lower() e re.sub() para remover pontuação indevida,
+    preservando letras (sem acento) e espaços. Vazio após limpeza -> sem categoria.
+    """
+    if not raw.strip():
+        return SEM_CATEGORIA
+
+    texto = raw.strip().lower()
+    texto = _CATEGORIA_CARACTERES_INVALIDOS.sub("", texto)
+    texto = _ESPACOS_MULTIPLOS.sub(" ", texto).strip()
+    return texto or SEM_CATEGORIA
+
+
+def normalize_canal_venda(raw: str) -> str:
+    """Padroniza grafias conhecidas para Mercado, Loja física e Web."""
+    chave = _ESPACOS_MULTIPLOS.sub(" ", raw.strip().lower())
+    return CANAIS_OFICIAIS.get(chave, raw.strip())
+
+
+def transform_string_fields(
+    registros: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], StringTransformStats]:
+    """
+    Retorna cópias dos registros com categoria e canal padronizados,
+    sem modificar o CSV original.
+    """
+    saida: list[dict[str, str]] = []
+    vazias_preenchidas = 0
+    nao_vazias_alteradas = 0
+    canais_alterados = 0
+
+    for registro in registros:
+        novo = dict(registro)
+        categoria_original = registro["categoria"]
+        canal_original = registro["canal_venda"]
+
+        categoria_nova = normalize_categoria(categoria_original)
+        canal_novo = normalize_canal_venda(canal_original)
+
+        if not categoria_original.strip():
+            vazias_preenchidas += 1
+        elif categoria_nova != categoria_original:
+            nao_vazias_alteradas += 1
+
+        if canal_novo != canal_original:
+            canais_alterados += 1
+
+        novo["categoria"] = categoria_nova
+        novo["canal_venda"] = canal_novo
+        saida.append(novo)
+
+    stats = StringTransformStats(
+        categorias_vazias_preenchidas=vazias_preenchidas,
+        categorias_nao_vazias_alteradas=nao_vazias_alteradas,
+        canais_alterados=canais_alterados,
+    )
+    return saida, stats
