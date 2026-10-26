@@ -1,0 +1,12 @@
+[project]
+name = "ex1"
+version = "0.1.0"
+description = "Mini-projeto Festa em Cena — análise de halloween_vendas.csv"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+]
