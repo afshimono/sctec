@@ -253,3 +253,92 @@ def transform_string_fields(
         canais_alterados=canais_alterados,
     )
     return saida, stats
+
+
+@dataclass(frozen=True)
+class NumericValidationStats:
+    """Contagens de problemas em quantidade e preco_unitario."""
+
+    problemas_quantidade: int
+    problemas_preco_unitario: int
+    pedidos_com_problema: int
+
+    def summary(self) -> dict[str, int]:
+        return {
+            "problemas_quantidade": self.problemas_quantidade,
+            "problemas_preco_unitario": self.problemas_preco_unitario,
+            "pedidos_com_problema": self.pedidos_com_problema,
+        }
+
+
+def _motivo_quantidade_invalida(raw: str) -> str | None:
+    """
+    Regra: quantidade deve ser inteiro estrito maior que zero.
+    Não corrigimos o valor — apenas classificamos o problema.
+    """
+    texto = raw.strip()
+    if not texto:
+        return "quantidade_vazia"
+    try:
+        valor = int(texto)
+    except ValueError:
+        return "quantidade_nao_inteira"
+    if valor <= 0:
+        return "quantidade_menor_ou_igual_a_zero"
+    return None
+
+
+def _motivo_preco_invalido(raw: str) -> str | None:
+    """
+    Regra: preco_unitario deve estar preenchido e ser numérico >= 0.
+    """
+    texto = raw.strip()
+    if not texto:
+        return "preco_unitario_ausente"
+    try:
+        valor = float(texto)
+    except ValueError:
+        return "preco_unitario_nao_numerico"
+    if valor < 0:
+        return "preco_unitario_negativo"
+    return None
+
+
+def validate_numeric_fields(
+    registros: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], list[dict[str, str]], NumericValidationStats]:
+    """
+    Separa registros com problemas numéricos dos demais, sem alterar valores.
+    O processamento considera todos os registros mesmo quando há erros.
+    """
+    validos: list[dict[str, str]] = []
+    com_problema: list[dict[str, str]] = []
+    problemas_quantidade = 0
+    problemas_preco = 0
+    pedidos_afetados: set[str] = set()
+
+    for registro in registros:
+        motivos: list[str] = []
+        motivo_q = _motivo_quantidade_invalida(registro["quantidade"])
+        if motivo_q is not None:
+            motivos.append(motivo_q)
+            problemas_quantidade += 1
+        motivo_p = _motivo_preco_invalido(registro["preco_unitario"])
+        if motivo_p is not None:
+            motivos.append(motivo_p)
+            problemas_preco += 1
+
+        if motivos:
+            pedidos_afetados.add(registro["pedido_id"])
+            marcado = dict(registro)
+            marcado["_problemas"] = motivos
+            com_problema.append(marcado)
+        else:
+            validos.append(dict(registro))
+
+    stats = NumericValidationStats(
+        problemas_quantidade=problemas_quantidade,
+        problemas_preco_unitario=problemas_preco,
+        pedidos_com_problema=len(pedidos_afetados),
+    )
+    return validos, com_problema, stats

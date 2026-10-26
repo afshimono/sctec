@@ -52,3 +52,10 @@ uv run python -c "from functions import validate_csv_file; print(validate_csv_fi
 | `analise.ipynb` | Exploração e relatórios |
 | `halloween_vendas.csv` | Base de dados (1.500 pedidos) |
 | `INSTRUCTIONS.md` | Enunciado completo do mini-projeto |
+
+### Regras de validação numérica
+
+- **quantidade:** texto não vazio, conversível para `int` e **maior que zero**. Valores ausentes, não inteiros ou ≤ 0 são marcados; o valor original é mantido.
+- **preco_unitario:** texto não vazio, conversível para `float` e **≥ 0**. Ausente, não numérico ou negativo são marcados; não preenchemos preço faltante.
+
+Contagens reportam problemas **por campo** e **pedidos distintos** com qualquer problema (`pedido_id`), sem somar campos do mesmo pedido como pedidos separados.
