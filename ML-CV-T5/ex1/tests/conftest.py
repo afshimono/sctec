@@ -1,4 +1,4 @@
-"""Fixtures compartilhadas para os testes de functions."""
+"""Fixtures pytest reutilizadas em ``tests/test_functions.py``."""
 
 from __future__ import annotations
 
@@ -54,12 +54,15 @@ def csv_halloween() -> Path:
 
 @pytest.fixture
 def registros_halloween(csv_halloween: Path) -> list[dict[str, str]]:
+    """Lista de pedidos lida do ``halloween_vendas.csv`` via ``read_sales_csv``."""
     return fn.read_sales_csv(csv_halloween)
 
 
 @pytest.fixture
-def pipeline_halloween(registros_halloween: list[dict[str, str]]):
-    """Registros após strings e validação numérica, mais stats para relatório."""
+def pipeline_halloween(
+    registros_halloween: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], fn.StringTransformStats, fn.NumericValidationStats]:
+    """Tupla ``(registros_limpos, stats_strings, stats_numericos)`` após Sprints 2–3."""
     limpos, stats_strings = fn.transform_string_fields(registros_halloween)
     _, _, stats_numericos = fn.validate_numeric_fields(limpos)
     return limpos, stats_strings, stats_numericos
