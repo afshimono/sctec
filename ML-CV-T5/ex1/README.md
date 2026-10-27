@@ -78,6 +78,7 @@ Execute o notebook para reproduzir os números. Resumo típico:
 
 | Arquivo | Função |
 |---------|--------|
+| `data_schema.py` | Dataclasses e definição de colunas do CSV |
 | `functions.py` | Leitura, validação, transformações e relatório |
 | `analise.ipynb` | Fluxo completo e interpretação |
 | `halloween_vendas.csv` | 1.500 pedidos fictícios |
