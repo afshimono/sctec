@@ -123,11 +123,14 @@ Reproduza os números no notebook. Destaques típicos:
 
 ## Estrutura do projeto
 
-| Arquivo | Função |
-|---------|--------|
-| `halloween_vendas.csv` | Base de dados (não modificado pelo código) |
-| `data_schema.py` | Dataclasses e colunas esperadas |
-| `functions.py` | Leitura, validação, transformações e relatório |
-| `analise.ipynb` | Demonstração e interpretação |
-| `INSTRUCTIONS.md` | Enunciado acadêmico |
-| `tests/` | Testes pytest |
+Pasta de trabalho: `ML-CV-T5/ex1/`.
+
+| Arquivo / pasta | Função |
+|-----------------|--------|
+| `halloween_vendas.csv` | Base de dados de entrada (1.500 pedidos; **não** é alterado pelo código) |
+| `data_schema.py` | Esquema do CSV (`EXPECTED_COLUMNS`) e dataclasses de validação, transformação e relatório (`CsvValidationResult`, `StringTransformStats`, `NumericValidationStats`, `DataVendaInfo`, `EntregaSemDataStats`, `ContagemCanal`, `ContagemAnoMes`, `RelatorioStatus`) |
+| `functions.py` | Funções de leitura (`csv.DictReader`), padronização, validação numérica, datas e `gerar_relatorio_status` |
+| `analise.ipynb` | Notebook com o fluxo completo e interpretação dos resultados |
+| `INSTRUCTIONS.md` | Enunciado acadêmico do mini-projeto |
+| `pyproject.toml` / `uv.lock` | Dependências e ambiente gerenciados com [uv](https://docs.astral.sh/uv/) |
+| `tests/` | Testes automatizados (`test_functions.py`, `conftest.py`) executados com pytest |
